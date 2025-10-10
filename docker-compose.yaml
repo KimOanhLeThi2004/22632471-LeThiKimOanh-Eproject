@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "37017:27017"
+    networks:
+      - app-network
+    restart: always   # ✅ Tự khởi động lại nếu lỗi
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app-network
+    restart: always   # ✅ Giữ RabbitMQ luôn bật
+
+  auth:
+    build: ./auth
+    env_file:
+      - ./auth/.env
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+    restart: always   # ✅ Nếu Mongo chậm start thì container này tự restart lại
+
+  product:
+    build: ./product
+    env_file:
+      - ./product/.env
+    depends_on:
+      - mongo
+      - rabbitmq
+    networks:
+      - app-network
+    restart: always   # ✅ Tự restart khi RabbitMQ chưa sẵn sàng
+
+  order:
+    build: ./order
+    env_file:
+      - ./order/.env
+    depends_on:
+      - mongo
+      - rabbitmq
+    networks:
+      - app-network
+    restart: always   # ✅ Tự restart khi Mongo hoặc RabbitMQ chưa sẵn sàng
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3003:3003"
+    depends_on:
+      - auth
+      - product
+      - order
+    networks:
+      - app-network
+    restart: always   # ✅ Giữ gateway luôn hoạt động
+
+networks:
+  app-network:
+    driver: bridge
