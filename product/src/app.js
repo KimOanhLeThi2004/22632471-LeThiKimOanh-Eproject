@@ -1,55 +1,35 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const config = require("./config");
-const MessageBroker = require("./utils/messageBroker");
-const productsRouter = require("./routes/productRoutes");
-require("dotenv").config();
+const cors = require("cors");
+const productRoutes = require("./routes/productRoutes");
 
 class App {
   constructor() {
     this.app = express();
+    this.config();
+    this.routes();
     this.connectDB();
-    this.setMiddlewares();
-    this.setRoutes();
-    this.setupMessageBroker();
   }
 
-  async connectDB() {
-    await mongoose.connect(config.mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected");
-  }
-
-  async disconnectDB() {
-    await mongoose.disconnect();
-    console.log("MongoDB disconnected");
-  }
-
-  setMiddlewares() {
+  config() {
+    this.app.use(cors());
     this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: false }));
   }
 
-  setRoutes() {
-    this.app.use("/", productsRouter);
+  routes() {
+    this.app.use("/", productRoutes);
   }
 
-  setupMessageBroker() {
-    MessageBroker.connect();
+  connectDB() {
+    mongoose
+      .connect(process.env.MONGODB_PRODUCT_URI || "mongodb://localhost:27017/productdb")
+      .then(() => console.log("✅ MongoDB connected"))
+      .catch((err) => console.error("❌ MongoDB connection error:", err));
   }
 
   start() {
-    this.server = this.app.listen(3001, "0.0.0.0", () =>
-      console.log("Server started on port 3001")
-    );
-  }
-
-  async stop() {
-    await mongoose.disconnect();
-    this.server.close();
-    console.log("Server stopped");
+    const PORT = process.env.PORT || 3001;
+    this.app.listen(PORT, () => console.log(`🚀 Product service running on port ${PORT}`));
   }
 }
 

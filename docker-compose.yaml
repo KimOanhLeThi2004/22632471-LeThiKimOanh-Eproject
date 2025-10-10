@@ -29,12 +29,16 @@ services:
       - ./auth/.env
     depends_on:
       - mongo
+    ports:
+      - "3000:3000"   # ✅ Map cổng container ra máy host
     networks:
       - app-network
-    restart: always   # ✅ Nếu Mongo chậm start thì container này tự restart lại
+    restart: always
 
   product:
     build: ./product
+    ports:
+      - "3001:3001"        # ✅ expose cổng product ra ngoài
     env_file:
       - ./product/.env
     depends_on:
@@ -42,7 +46,7 @@ services:
       - rabbitmq
     networks:
       - app-network
-    restart: always   # ✅ Tự restart khi RabbitMQ chưa sẵn sàng
+    restart: always
 
   order:
     build: ./order
@@ -51,9 +55,11 @@ services:
     depends_on:
       - mongo
       - rabbitmq
+    ports:
+      - "3002:3002"     # ✅ Map port container ra ngoài để test bằng Postman
     networks:
       - app-network
-    restart: always   # ✅ Tự restart khi Mongo hoặc RabbitMQ chưa sẵn sàng
+    restart: always
 
   api-gateway:
     build: ./api-gateway
