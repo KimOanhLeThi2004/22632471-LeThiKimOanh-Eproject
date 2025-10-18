@@ -37,50 +37,37 @@ class ProductController {
   }
 
   async createOrder(req, res, next) {
-    try {
-      const token = req.headers.authorization;
-      if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-  
-      const { ids } = req.body;
-      const products = await Product.find({ _id: { $in: ids } });
-  
-      const orderId = uuid.v4();
-      this.ordersMap.set(orderId, { 
-        status: "pending", 
-        products, 
-        username: req.user.username
-      });
-  
-      await messageBroker.publishMessage("orders", {
-        products,
-        username: req.user.username,
-        orderId,
-      });
-
-      messageBroker.consumeMessage("products", (data) => {
-        const orderData = JSON.parse(JSON.stringify(data));
-        const { orderId } = orderData;
-        const order = this.ordersMap.get(orderId);
-        if (order) {
-          this.ordersMap.set(orderId, { ...order, ...orderData, status: 'completed' });
-          console.log("Updated order:", order);
-        }
-      });
-  
-      let order = this.ordersMap.get(orderId);
-      while (order.status !== 'completed') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        order = this.ordersMap.get(orderId);
-      }
-  
-      return res.status(201).json(order);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
+  try {
+    const token = req.headers.authorization;
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
+
+    const { ids } = req.body;
+    const products = await Product.find({ _id: { $in: ids } });
+
+    const orderId = uuid.v4();
+
+    // Gửi message sang hàng đợi "orders"
+    await messageBroker.publishMessage("orders", {
+      products,
+      username: req.user?.username || "guest",
+      orderId,
+    });
+
+    // ✅ Phản hồi ngay cho client (không chờ Order service phản hồi)
+    return res.status(200).json({
+      message: "Order request sent to queue",
+      orderId,
+      totalProducts: products.length,
+    });
+
+  } catch (error) {
+    console.error("❌ Error creating order:", error);
+    res.status(500).json({ message: "Server error" });
   }
+}
+
 
   async getOrderStatus(req, res, next) {
     const { orderId } = req.params;
