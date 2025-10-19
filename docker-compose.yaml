@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   mongo:
     image: mongo:6
@@ -23,8 +25,6 @@ services:
 
   auth:
     build: ./auth
-    env_file:
-      - ./auth/.env
     depends_on:
       - mongo
     ports:
@@ -32,24 +32,30 @@ services:
     networks:
       - app-network
     restart: always
+    environment:
+      MONGODB_AUTH_URI: ${MONGODB_AUTH_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: ${AUTH_PORT}
 
   product:
     build: ./product
-    ports:
-      - "3001:3001"
-    env_file:
-      - ./product/.env
     depends_on:
       - mongo
       - rabbitmq
+    ports:
+      - "3001:3001"
     networks:
       - app-network
     restart: always
+    environment:
+      PORT: ${PRODUCT_PORT}
+      MONGODB_PRODUCT_URI: ${MONGODB_PRODUCT_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      RABBITMQ_URL: ${RABBITMQ_URL}
 
   order:
     build: ./order
-    env_file:
-      - ./order/.env
     depends_on:
       - mongo
       - rabbitmq
@@ -58,34 +64,35 @@ services:
     networks:
       - app-network
     restart: always
+    environment:
+      PORT: ${ORDER_PORT}
+      MONGODB_ORDER_URI: ${MONGODB_ORDER_URI}
+      MONGODB_AUTH_URI: ${MONGODB_AUTH_URI}
+      MONGODB_PRODUCT_URI: ${MONGODB_PRODUCT_URI}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
+      JWT_SECRET: ${JWT_SECRET}
 
   api-gateway:
     build: ./api-gateway
-    ports:
-      - "3003:3003"
     depends_on:
       - auth
       - product
       - order
+    ports:
+      - "3003:3003"
     networks:
       - app-network
     restart: always
 
-  # ĐÚNG: api-test là một service riêng biệt, ngang hàng
-  # Lưu ý: Thư mục ./tests không có trong cấu trúc bạn cung cấp ban đầu.
-  # Bạn cần tạo thư mục này và Dockerfile tương ứng cho nó nếu muốn dùng.
-  # Tên service trong depends_on cũng cần khớp với tên bạn định nghĩa (vd: product, order)
   api-test:
-    # build: ./tests # Đảm bảo đường dẫn này đúng và có Dockerfile
-    image: curlimages/curl:latest # Hoặc dùng một image phù hợp để test API
+    image: curlimages/curl:latest
     depends_on:
-      - product # Sửa tên service
-      - order   # Sửa tên service
-      # - payment-service # Bỏ service không tồn tại
+      - api-gateway
     networks:
       - app-network
-    # Command để chạy test, ví dụ:
-    # command: ["./run-tests.sh"]
+    command: ["sh", "-c", "curl -f http://api-gateway:3003/health || exit 1"]
 
 networks:
   app-network:
