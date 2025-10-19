@@ -1,4 +1,26 @@
 services:
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - "37017:27017"
+    networks:
+      - app-network
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - app-network
+    restart: always
+
   auth:
     build: ./auth
     environment:
@@ -48,3 +70,19 @@ services:
     networks:
       - app-network
     restart: always
+
+  api-gateway:
+    build: ./api-gateway
+    depends_on:
+      - auth
+      - product
+      - order
+    ports:
+      - "${API_GATEWAY_PORT}:3003"
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
