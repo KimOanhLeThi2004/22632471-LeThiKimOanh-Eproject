@@ -1,99 +1,50 @@
-version: "3.9"
-
 services:
-  mongo:
-    image: mongo:6
-    container_name: mongo
-    ports:
-      - "37017:27017"
-    networks:
-      - app-network
-    restart: always
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - app-network
-    restart: always
-
   auth:
     build: ./auth
+    environment:
+      - MONGODB_AUTH_URI=${MONGODB_AUTH_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=${AUTH_PORT}
     depends_on:
       - mongo
     ports:
-      - "3000:3000"
+      - "${AUTH_PORT}:3000"
     networks:
       - app-network
     restart: always
-    environment:
-      MONGODB_AUTH_URI: ${MONGODB_AUTH_URI}
-      JWT_SECRET: ${JWT_SECRET}
-      PORT: ${AUTH_PORT}
 
   product:
     build: ./product
+    environment:
+      - MONGODB_PRODUCT_URI=${MONGODB_PRODUCT_URI}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - PORT=${PRODUCT_PORT}
     depends_on:
       - mongo
       - rabbitmq
     ports:
-      - "3001:3001"
+      - "${PRODUCT_PORT}:3001"
     networks:
       - app-network
     restart: always
-    environment:
-      PORT: ${PRODUCT_PORT}
-      MONGODB_PRODUCT_URI: ${MONGODB_PRODUCT_URI}
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      RABBITMQ_URL: ${RABBITMQ_URL}
 
   order:
     build: ./order
+    environment:
+      - MONGODB_ORDER_URI=${MONGODB_ORDER_URI}
+      - MONGODB_PRODUCT_URI=${MONGODB_PRODUCT_URI}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_QUEUE=${RABBITMQ_QUEUE}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=${ORDER_PORT}
     depends_on:
       - mongo
       - rabbitmq
     ports:
-      - "3002:3002"
+      - "${ORDER_PORT}:3002"
     networks:
       - app-network
     restart: always
-    environment:
-      PORT: ${ORDER_PORT}
-      MONGODB_ORDER_URI: ${MONGODB_ORDER_URI}
-      MONGODB_AUTH_URI: ${MONGODB_AUTH_URI}
-      MONGODB_PRODUCT_URI: ${MONGODB_PRODUCT_URI}
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
-      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE}
-      JWT_SECRET: ${JWT_SECRET}
-
-  api-gateway:
-    build: ./api-gateway
-    depends_on:
-      - auth
-      - product
-      - order
-    ports:
-      - "3003:3003"
-    networks:
-      - app-network
-    restart: always
-
-  api-test:
-    image: curlimages/curl:latest
-    depends_on:
-      - api-gateway
-    networks:
-      - app-network
-    command: ["sh", "-c", "curl -f http://api-gateway:3003/health || exit 1"]
-
-networks:
-  app-network:
-    driver: bridge
