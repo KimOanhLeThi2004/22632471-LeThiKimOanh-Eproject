@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:6
@@ -8,7 +6,7 @@ services:
       - "37017:27017"
     networks:
       - app-network
-    restart: always   # ✅ Tự khởi động lại nếu lỗi
+    restart: always
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -21,7 +19,7 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - app-network
-    restart: always   # ✅ Giữ RabbitMQ luôn bật
+    restart: always
 
   auth:
     build: ./auth
@@ -30,7 +28,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "3000:3000"   # ✅ Map cổng container ra máy host
+      - "3000:3000"
     networks:
       - app-network
     restart: always
@@ -38,7 +36,7 @@ services:
   product:
     build: ./product
     ports:
-      - "3001:3001"        # ✅ expose cổng product ra ngoài
+      - "3001:3001"
     env_file:
       - ./product/.env
     depends_on:
@@ -56,7 +54,7 @@ services:
       - mongo
       - rabbitmq
     ports:
-      - "3002:3002"     # ✅ Map port container ra ngoài để test bằng Postman
+      - "3002:3002"
     networks:
       - app-network
     restart: always
@@ -71,7 +69,23 @@ services:
       - order
     networks:
       - app-network
-    restart: always   # ✅ Giữ gateway luôn hoạt động
+    restart: always
+
+  # ĐÚNG: api-test là một service riêng biệt, ngang hàng
+  # Lưu ý: Thư mục ./tests không có trong cấu trúc bạn cung cấp ban đầu.
+  # Bạn cần tạo thư mục này và Dockerfile tương ứng cho nó nếu muốn dùng.
+  # Tên service trong depends_on cũng cần khớp với tên bạn định nghĩa (vd: product, order)
+  api-test:
+    # build: ./tests # Đảm bảo đường dẫn này đúng và có Dockerfile
+    image: curlimages/curl:latest # Hoặc dùng một image phù hợp để test API
+    depends_on:
+      - product # Sửa tên service
+      - order   # Sửa tên service
+      # - payment-service # Bỏ service không tồn tại
+    networks:
+      - app-network
+    # Command để chạy test, ví dụ:
+    # command: ["./run-tests.sh"]
 
 networks:
   app-network:
