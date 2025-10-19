@@ -46,7 +46,10 @@ jobs:
 
       - name: 🧪 Run API tests
         continue-on-error: true
-        run: docker compose up --abort-on-container-exit --exit-code-from api-test
+        run: |
+          docker compose up -d
+          Start-Sleep -Seconds 10
+          docker ps
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3

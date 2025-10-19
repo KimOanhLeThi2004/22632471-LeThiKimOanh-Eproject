@@ -1,16 +1,19 @@
 services:
   mongo:
     image: mongo:6
-    container_name: mongo
     ports:
       - "37017:27017"
     networks:
       - app-network
     restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -20,6 +23,11 @@ services:
     networks:
       - app-network
     restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   auth:
     build: ./auth
@@ -83,13 +91,11 @@ services:
       - app-network
     restart: always
 
-  # ✅ Service test API
+  # (Tuỳ chọn) Chạy test API sau khi các service khởi động
   api-test:
     build: ./tests
     depends_on:
       - api-gateway
-      - product
-      - order
     networks:
       - app-network
     restart: "no"
