@@ -1,4 +1,4 @@
-name: CI/CD Pipeline (Docker - Self-hosted)
+name: CI/CD Pipeline (Docker - Self-hosted, Windows Compatible)
 
 on:
   push:
@@ -14,25 +14,28 @@ jobs:
       - name: 🧩 Checkout source code
         uses: actions/checkout@v4
 
-      - name: 🧹 Clean old containers
+      - name: 🧹 Clean old containers (Windows-safe)
+        continue-on-error: true
+        shell: pwsh
         run: |
-          docker compose down --remove-orphans || true
-          docker system prune -f || true
+          docker compose down --remove-orphans
+          docker system prune -f
 
       - name: ⚙️ Set environment variables
+        shell: pwsh
         run: |
-          echo "MONGODB_AUTH_URI=${{ secrets.MONGODB_AUTH_URI }}" >> $GITHUB_ENV
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
-          echo "AUTH_PORT=${{ secrets.AUTH_PORT }}" >> $GITHUB_ENV
+          echo "MONGODB_AUTH_URI=${{ secrets.MONGODB_AUTH_URI }}" >> $env:GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $env:GITHUB_ENV
+          echo "AUTH_PORT=${{ secrets.AUTH_PORT }}" >> $env:GITHUB_ENV
 
-          echo "MONGODB_PRODUCT_URI=${{ secrets.MONGODB_PRODUCT_URI }}" >> $GITHUB_ENV
-          echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}" >> $GITHUB_ENV
-          echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> $GITHUB_ENV
-          echo "PRODUCT_PORT=${{ secrets.PRODUCT_PORT }}" >> $GITHUB_ENV
+          echo "MONGODB_PRODUCT_URI=${{ secrets.MONGODB_PRODUCT_URI }}" >> $env:GITHUB_ENV
+          echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}" >> $env:GITHUB_ENV
+          echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> $env:GITHUB_ENV
+          echo "PRODUCT_PORT=${{ secrets.PRODUCT_PORT }}" >> $env:GITHUB_ENV
 
-          echo "MONGODB_ORDER_URI=${{ secrets.MONGODB_ORDER_URI }}" >> $GITHUB_ENV
-          echo "RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE }}" >> $GITHUB_ENV
-          echo "ORDER_PORT=${{ secrets.ORDER_PORT }}" >> $GITHUB_ENV
+          echo "MONGODB_ORDER_URI=${{ secrets.MONGODB_ORDER_URI }}" >> $env:GITHUB_ENV
+          echo "RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE }}" >> $env:GITHUB_ENV
+          echo "ORDER_PORT=${{ secrets.ORDER_PORT }}" >> $env:GITHUB_ENV
 
       - name: 🏗️ Build Docker images
         run: docker compose build
@@ -50,6 +53,7 @@ jobs:
         run: docker compose push
 
       - name: 🔄 Deploy updated containers
+        shell: pwsh
         run: |
           docker compose down --remove-orphans
           docker compose pull
