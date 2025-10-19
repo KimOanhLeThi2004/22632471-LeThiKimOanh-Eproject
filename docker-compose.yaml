@@ -1,6 +1,4 @@
 services:
-  rabbitmq-service:
-    container_name: rabbitmq-service
   mongo:
     image: mongo:6
     container_name: mongo
