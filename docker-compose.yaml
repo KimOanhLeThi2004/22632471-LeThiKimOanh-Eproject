@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   mongo:
     image: mongo:6
@@ -82,6 +84,17 @@ services:
     networks:
       - app-network
     restart: always
+
+  # ✅ Service test API
+  api-test:
+    build: ./tests
+    depends_on:
+      - api-gateway
+      - product
+      - order
+    networks:
+      - app-network
+    restart: "no"
 
 networks:
   app-network:

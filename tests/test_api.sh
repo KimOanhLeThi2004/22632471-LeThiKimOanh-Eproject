@@ -1,7 +1,7 @@
 #!/bin/sh
-echo "Bắt đầu kiểm thử API các service..."
+echo "🔍 Bắt đầu kiểm thử API các service..."
 
-sleep 10  # chờ các container service khởi động xong
+sleep 15  # chờ container khác khởi động
 
 check_api() {
   SERVICE_NAME=$1
@@ -18,9 +18,10 @@ check_api() {
   fi
 }
 
-# Ví dụ test endpoint gốc của từng service (chỉnh theo dự án của bạn)
-check_api "Product Service" "http://product-service:3000/"
-check_api "Order Service" "http://order-service:3000/"
-check_api "Payment Service" "http://payment-service:3000/"
+# ⚙️ Test các service thật trong compose
+check_api "Auth Service" "http://auth:3000/"
+check_api "Product Service" "http://product:3001/"
+check_api "Order Service" "http://order:3002/"
+check_api "API Gateway" "http://api-gateway:3003/"
 
-echo "Tất cả API đều hoạt động ổn định!"
+echo "🎉 Tất cả API đều hoạt động ổn định!"
