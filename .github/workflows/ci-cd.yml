@@ -44,12 +44,15 @@ jobs:
       - name: 🏗️ Build Docker images
         run: docker compose build
 
-      - name: 🧪 Run API tests
-        continue-on-error: true
+      # ✅ Giữ container chạy, không tự tắt sau khi test
+      - name: 🧪 Run API services locally
         run: |
           docker compose up -d
-          Start-Sleep -Seconds 10
-          docker ps
+          echo "⏳ Waiting for services to start..."
+          Start-Sleep -Seconds 15
+          docker ps -a
+
+      # (Nếu bạn vẫn muốn test API tự động thì thêm bước test riêng tại đây, VD curl/gọi endpoint)
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
@@ -60,9 +63,10 @@ jobs:
       - name: 📤 Push images to DockerHub
         run: docker compose push
 
-      - name: 🔄 Deploy updated containers
+      # ⚠️ Giữ nguyên container sau deploy (không down/up lại)
+      - name: 🔄 Deploy updated containers (keep running)
         shell: powershell
         run: |
-          docker compose down --remove-orphans
           docker compose pull
           docker compose up -d --remove-orphans
+          docker ps
