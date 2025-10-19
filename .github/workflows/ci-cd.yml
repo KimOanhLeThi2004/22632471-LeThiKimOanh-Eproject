@@ -19,7 +19,9 @@ jobs:
         shell: powershell
         run: |
           docker compose down --remove-orphans
-          docker system prune -f
+          docker stop $(docker ps -aq) 2>$null
+          docker rm -f $(docker ps -aq) 2>$null
+          docker system prune -af --volumes
 
       - name: ⚙️ Set environment variables (PowerShell-safe)
         shell: powershell
