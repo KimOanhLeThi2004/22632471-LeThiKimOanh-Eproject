@@ -37,11 +37,13 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE }}"
           Add-Content -Path $env:GITHUB_ENV -Value "ORDER_PORT=${{ secrets.ORDER_PORT }}"
 
+          # Thêm API Gateway port
+          Add-Content -Path $env:GITHUB_ENV -Value "API_GATEWAY_PORT=${{ secrets.API_GATEWAY_PORT }}"
+
       - name: 🏗️ Build Docker images
         run: docker compose build
 
       - name: 🧪 Run API tests
-        # Nếu bạn chưa có service api-test trong docker-compose.yml, bỏ bước này
         continue-on-error: true
         run: docker compose up --abort-on-container-exit --exit-code-from api-test
 
