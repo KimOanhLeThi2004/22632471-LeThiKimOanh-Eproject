@@ -3,7 +3,6 @@
 services:
   mongo:
     image: mongo:6
-    container_name: mongo # Đặt tên cố định cho dễ tham chiếu
     ports:
       - "37017:27017"
     networks:
