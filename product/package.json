@@ -19,9 +19,10 @@
     "jsonwebtoken": "^9.0.0",
     "mocha": "^10.2.0",
     "uuid": "^9.0.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "mongoose": "^7.0.1"
   },
   "devDependencies": {
-    "mongoose": "^7.0.1"
+    
   }
 }
