@@ -130,6 +130,6 @@ networks:
   app-network:
     driver: bridge
 
-volumes: # Khai báo volumes để giữ dữ liệu (m)
+volumes: # Khai báo volumes để giữ dữ liệu 
   mongo-data:
   rabbitmq-data:
