@@ -1,11 +1,16 @@
+# docker-compose.yaml (Đã sửa)
+
 services:
   mongo:
     image: mongo:6
+    container_name: mongo # Đặt tên cố định cho dễ tham chiếu
     ports:
       - "37017:27017"
     networks:
       - app-network
     restart: always
+    volumes: # Thêm volume để giữ dữ liệu
+      - mongo-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -14,15 +19,19 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq # Đặt tên cố định
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
+      # Biến môi trường mặc định của image RabbitMQ
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
     networks:
       - app-network
     restart: always
+    volumes: # Thêm volume để giữ dữ liệu
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
@@ -30,82 +39,99 @@ services:
       retries: 5
 
   auth:
-    env_file:
-      - ./auth/.env
     build: ./auth
-    environment:
+    # Đã xóa env_file
+    environment: # Đọc từ file .env gốc hoặc môi trường host
       - MONGODB_AUTH_URI=${MONGODB_AUTH_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - PORT=${AUTH_PORT}
+      - PORT=${AUTH_PORT:-3000} #:-3000 nghĩa là nếu AUTH_PORT không set thì dùng 3000
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy # Đợi mongo healthy
     ports:
-      - "${AUTH_PORT}:3000"
+      - "${AUTH_PORT:-3000}:3000" # Dùng giá trị mặc định nếu biến không set
     networks:
       - app-network
     restart: always
 
   product:
-    env_file:
-      - ./product/.env
     build: ./product
-    environment:
+    # Đã xóa env_file
+    environment: # Đọc từ file .env gốc hoặc môi trường host
       - MONGODB_PRODUCT_URI=${MONGODB_PRODUCT_URI}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:3000} # Thêm mặc định
       - JWT_SECRET=${JWT_SECRET}
-      - RABBITMQ_URL=${RABBITMQ_URL}
-      - PORT=${PRODUCT_PORT}
+      - RABBITMQ_URI=${RABBITMQ_URI} # Đảm bảo tên này khớp với .env và code
+      - PORT=${PRODUCT_PORT:-3001}
     depends_on:
-      - mongo
-      - rabbitmq
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy # Đợi rabbitmq healthy
+      auth: # Thêm phụ thuộc vào auth nếu product cần gọi auth
+         condition: service_started # Hoặc service_healthy nếu auth có healthcheck
     ports:
-      - "${PRODUCT_PORT}:3001"
+      - "${PRODUCT_PORT:-3001}:3001"
     networks:
       - app-network
     restart: always
 
   order:
-    env_file:
-      - ./order/.env
     build: ./order
-    environment:
+    # Đã xóa env_file
+    environment: # Đọc từ file .env gốc hoặc môi trường host
       - MONGODB_ORDER_URI=${MONGODB_ORDER_URI}
-      - MONGODB_PRODUCT_URI=${MONGODB_PRODUCT_URI}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
-      - RABBITMQ_URL=${RABBITMQ_URL}
-      - RABBITMQ_QUEUE=${RABBITMQ_QUEUE}
-      - JWT_SECRET=${JWT_SECRET}
-      - PORT=${ORDER_PORT}
+      - RABBITMQ_URI=${RABBITMQ_URI} # Đảm bảo tên này khớp với .env và code
+      - RABBITMQ_QUEUE=${RABBITMQ_QUEUE:-orders} # Thêm mặc định
+      - JWT_SECRET=${JWT_SECRET} # Cần thiết nếu order gọi service khác
+      - PORT=${ORDER_PORT:-3002}
+      # Có thể thêm các URI khác nếu order cần gọi chúng
     depends_on:
-      - mongo
-      - rabbitmq
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     ports:
-      - "${ORDER_PORT}:3002"
+      - "${ORDER_PORT:-3002}:3002"
     networks:
       - app-network
     restart: always
 
   api-gateway:
     build: ./api-gateway
-    depends_on:
-      - auth
-      - product
-      - order
+    environment: # Gateway cũng có thể cần biến môi trường
+       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth:3000}
+       - PRODUCT_SERVICE_URL=${PRODUCT_SERVICE_URL:-http://product:3001}
+       - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order:3002}
+       - PORT=${API_GATEWAY_PORT:-3003}
+    depends_on: # Chỉ cần đợi service bắt đầu, healthcheck phức tạp hơn
+      auth:
+        condition: service_started
+      product:
+        condition: service_started
+      order:
+        condition: service_started
     ports:
-      - "${API_GATEWAY_PORT}:3003"
+      - "${API_GATEWAY_PORT:-3003}:3003"
     networks:
       - app-network
     restart: always
 
-  # (Tuỳ chọn) Chạy test API sau khi các service khởi động
-  api-test:
-    build: ./tests
-    depends_on:
-      - api-gateway
-    networks:
-      - app-network
-    restart: "no"
+  # Dịch vụ api-test vẫn cần được xem xét lại mục đích và command
+  # api-test:
+  #   build: ./tests
+  #   depends_on:
+  #     api-gateway:
+  #       condition: service_started # Chờ gateway khởi động
+  #   networks:
+  #     - app-network
+  #   restart: "no"
+  #   # command: ??? # Cần lệnh để chạy test
 
 networks:
   app-network:
     driver: bridge
+
+volumes: # Khai báo volumes để giữ dữ liệu
+  mongo-data:
+  rabbitmq-data:
