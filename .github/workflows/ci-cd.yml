@@ -16,13 +16,17 @@ jobs:
         # "|| true" để bỏ qua lỗi nếu container không tồn tại
         run: |
           Write-Host "Stopping and removing containers by name..."
-          docker stop mongo || true
-          docker rm mongo || true
-          docker stop rabbitmq || true
-          docker rm rabbitmq || true
-          
+          # Thêm -ErrorAction SilentlyContinue để bỏ qua lỗi nếu container không tồn tại
+          docker stop mongo -ErrorAction SilentlyContinue
+          docker rm mongo -ErrorAction SilentlyContinue
+          docker stop rabbitmq -ErrorAction SilentlyContinue
+          docker rm rabbitmq -ErrorAction SilentlyContinue
+
           Write-Host "Running docker compose down..."
           docker compose down --remove-orphans
+
+          Write-Host "Pruning docker system..."
+          docker system prune -af # Giữ nguyên việc bỏ --volumes để không mất dữ liệu
           
 
       - name: 🔐 Login to DockerHub
