@@ -25,7 +25,7 @@ jobs:
 
       # 🧾 Ghi tất cả secrets ra file .env để Docker Compose có thể đọc
       - name: 🧩 Generate .env file for Docker Compose
-        shell: bash
+        shell: powershell
         run: |
           echo "MONGODB_PRODUCT_URI=${{ secrets.MONGODB_PRODUCT_URI }}" >> .env
           echo "MONGODB_ORDER_URI=${{ secrets.MONGODB_ORDER_URI }}" >> .env
@@ -40,7 +40,7 @@ jobs:
           echo "API_GATEWAY_PORT=${{ secrets.API_GATEWAY_PORT }}" >> .env
 
       - name: 🏗️ Build and run services
-        shell: bash
+        shell: powershell
         run: |
           echo "🚀 Starting Docker Compose..."
           docker compose up -d --build
