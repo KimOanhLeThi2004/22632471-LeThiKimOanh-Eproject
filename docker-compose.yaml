@@ -19,7 +19,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"
+      - "5673:5672"
       - "15672:15672"
     environment:
       # Biến môi trường mặc định của image RabbitMQ
