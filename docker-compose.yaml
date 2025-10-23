@@ -4,7 +4,7 @@ services:
   mongo:
     image: mongo:6
     ports:
-      - "37017:27017"
+      - "37018:27017"
     networks:
       - app-network
     restart: always
