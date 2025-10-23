@@ -13,8 +13,17 @@ jobs:
 
       - name: 🧹 Clean old containers
         shell: powershell
+        # "|| true" để bỏ qua lỗi nếu container không tồn tại
         run: |
+          Write-Host "Stopping and removing containers by name..."
+          docker stop mongo || true
+          docker rm mongo || true
+          docker stop rabbitmq || true
+          docker rm rabbitmq || true
+          
+          Write-Host "Running docker compose down..."
           docker compose down --remove-orphans
+          
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
