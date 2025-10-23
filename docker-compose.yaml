@@ -4,7 +4,7 @@ services:
   mongo:
     image: mongo:6
     ports:
-      - "37018:27017"
+      - "37017:27017"
     networks:
       - app-network
     restart: always
@@ -20,7 +20,7 @@ services:
     image: rabbitmq:3-management
     ports:
       - "5673:5672"
-      - "37013:15672"
+      - "37012:15672"
     environment:
       # Biến môi trường mặc định của image RabbitMQ
       - RABBITMQ_DEFAULT_USER=guest

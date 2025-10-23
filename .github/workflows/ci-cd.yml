@@ -15,18 +15,21 @@ jobs:
         shell: powershell
         # "|| true" để bỏ qua lỗi nếu container không tồn tại
         run: |
-          Write-Host "Stopping and removing containers by name..."
-          # Thêm -ErrorAction SilentlyContinue để bỏ qua lỗi nếu container không tồn tại
-          docker stop mongo -ErrorAction SilentlyContinue
-          docker rm mongo -ErrorAction SilentlyContinue
-          docker stop rabbitmq -ErrorAction SilentlyContinue
-          docker rm rabbitmq -ErrorAction SilentlyContinue
-
-          Write-Host "Running docker compose down..."
-          docker compose down --remove-orphans
-
-          Write-Host "Pruning docker system..."
-          docker system prune -af # Giữ nguyên việc bỏ --volumes để không mất dữ liệu
+          Write-Host "Stopping and removing ALL existing containers (force)..."
+          # Lấy danh sách ID của TẤT CẢ container (đang chạy hoặc đã dừng)
+          $containerIDs = docker ps -aq
+          
+          if ($containerIDs) {
+            # Dừng và xóa bắt buộc tất cả container
+            docker rm -f $containerIDs -ErrorAction SilentlyContinue
+            Write-Host "All existing containers stopped and removed."
+          } else {
+            Write-Host "No containers found to remove."
+          }
+          
+          Write-Host "Pruning docker system (images, build cache, networks, and VOLUMES)..."
+          # Dọn dẹp triệt để: Xóa images không dùng, build cache, networks, và quan trọng là VOLUMES không dùng
+          docker system prune -af --volumes
           
 
       - name: 🔐 Login to DockerHub
