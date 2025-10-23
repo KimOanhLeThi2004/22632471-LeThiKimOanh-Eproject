@@ -15,7 +15,6 @@ jobs:
         shell: powershell
         run: |
           docker compose down --remove-orphans
-          docker system prune -af --volumes
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
