@@ -75,5 +75,5 @@ jobs:
           }
 
       - name: 📤 Push images to DockerHub
-        shell: bash
+        shell: powershell
         run: docker compose push
