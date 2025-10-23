@@ -20,7 +20,7 @@ services:
     image: rabbitmq:3-management
     ports:
       - "5673:5672"
-      - "15672:15672"
+      - "37013:15672"
     environment:
       # Biến môi trường mặc định của image RabbitMQ
       - RABBITMQ_DEFAULT_USER=guest
