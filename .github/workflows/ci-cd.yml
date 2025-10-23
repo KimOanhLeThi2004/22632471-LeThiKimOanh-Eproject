@@ -3,56 +3,19 @@ name: CI/CD Pipeline (Docker - Self-hosted, Windows PowerShell)
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-  build-test-deploy-local:
+  deploy:
     runs-on: self-hosted
 
     steps:
-      - name: 🧩 Checkout source code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 🧹 Clean old containers (Windows-safe)
-        continue-on-error: true
+      - name: 🧹 Clean old containers
         shell: powershell
         run: |
           docker compose down --remove-orphans
-          $containers = docker ps -aq
-          if ($containers) {
-            docker stop $containers
-            docker rm -f $containers
-          }
           docker system prune -af --volumes
-
-      - name: ⚙️ Set environment variables (PowerShell-safe)
-        shell: powershell
-        run: |
-          echo "MONGODB_AUTH_URI=${{ secrets.MONGODB_AUTH_URI }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "AUTH_PORT=${{ secrets.AUTH_PORT }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "MONGODB_PRODUCT_URI=${{ secrets.MONGODB_PRODUCT_URI }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "PRODUCT_PORT=${{ secrets.PRODUCT_PORT }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "MONGODB_ORDER_URI=${{ secrets.MONGODB_ORDER_URI }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "ORDER_PORT=${{ secrets.ORDER_PORT }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "API_GATEWAY_PORT=${{ secrets.API_GATEWAY_PORT }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: 🏗️ Build Docker images
-        run: docker compose build
-
-      # ✅ Giữ container chạy, không tự tắt sau khi test
-      - name: 🧪 Run API services locally
-        run: |
-          docker compose up -d
-          echo "⏳ Waiting for services to start..."
-          Start-Sleep -Seconds 15
-          docker ps -a
-
-      # (Nếu bạn vẫn muốn test API tự động thì thêm bước test riêng tại đây, VD curl/gọi endpoint)
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
@@ -60,13 +23,42 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 📤 Push images to DockerHub
-        run: docker compose push
+      # 🧾 Ghi tất cả secrets ra file .env để Docker Compose có thể đọc
+      - name: 🧩 Generate .env file for Docker Compose
+        shell: bash
+        run: |
+          echo "MONGODB_PRODUCT_URI=${{ secrets.MONGODB_PRODUCT_URI }}" >> .env
+          echo "MONGODB_ORDER_URI=${{ secrets.MONGODB_ORDER_URI }}" >> .env
+          echo "MONGODB_AUTH_URI=${{ secrets.MONGODB_AUTH_URI }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "AUTH_SERVICE_URL=${{ secrets.AUTH_SERVICE_URL }}" >> .env
+          echo "RABBITMQ_URL=${{ secrets.RABBITMQ_URL }}" >> .env
+          echo "RABBITMQ_QUEUE=${{ secrets.RABBITMQ_QUEUE }}" >> .env
+          echo "PRODUCT_PORT=${{ secrets.PRODUCT_PORT }}" >> .env
+          echo "ORDER_PORT=${{ secrets.ORDER_PORT }}" >> .env
+          echo "AUTH_PORT=${{ secrets.AUTH_PORT }}" >> .env
+          echo "API_GATEWAY_PORT=${{ secrets.API_GATEWAY_PORT }}" >> .env
 
-      # ⚠️ Giữ nguyên container sau deploy (không down/up lại)
-      - name: 🔄 Deploy updated containers (keep running)
+      - name: 🏗️ Build and run services
+        shell: bash
+        run: |
+          echo "🚀 Starting Docker Compose..."
+          docker compose up -d --build
+
+      - name: ⏳ Wait for API Gateway
         shell: powershell
         run: |
-          docker compose pull
-          docker compose up -d --remove-orphans
-          docker ps
+          for ($i = 0; $i -lt 10; $i++) {
+            try {
+              Invoke-WebRequest -Uri "http://localhost:${{ secrets.API_GATEWAY_PORT }}/api/health" -UseBasicParsing
+              Write-Host "✅ API Gateway is up!"
+              break
+            } catch {
+              Write-Host "Waiting for API Gateway..."
+              Start-Sleep -Seconds 5
+            }
+          }
+
+      - name: 📤 Push images to DockerHub
+        shell: bash
+        run: docker compose push

@@ -7,7 +7,7 @@
     "test": "mocha --timeout 20000 --recursive --exclude '**/node_modules/**' '**/*.test.js' --exit"
   },
   "keywords": [],
-  "author": "",
+  "author": "https://github.com/KimOanhLeThi2004/22632471-LeThiKimOanh-Eproject.git",
   "license": "ISC",
   "dependencies": {
     "amqplib": "^0.10.3",

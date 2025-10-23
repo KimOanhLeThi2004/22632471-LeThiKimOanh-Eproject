@@ -30,6 +30,8 @@ services:
       retries: 5
 
   auth:
+    env_file:
+      - ./auth/.env
     build: ./auth
     environment:
       - MONGODB_AUTH_URI=${MONGODB_AUTH_URI}
@@ -44,6 +46,8 @@ services:
     restart: always
 
   product:
+    env_file:
+      - ./product/.env
     build: ./product
     environment:
       - MONGODB_PRODUCT_URI=${MONGODB_PRODUCT_URI}
@@ -61,6 +65,8 @@ services:
     restart: always
 
   order:
+    env_file:
+      - ./order/.env
     build: ./order
     environment:
       - MONGODB_ORDER_URI=${MONGODB_ORDER_URI}
