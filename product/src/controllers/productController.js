@@ -43,8 +43,8 @@ class ProductController {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { ids } = req.body;
-    const products = await Product.find({ _id: { $in: ids } });
+    const { name } = req.body;
+    const products = await Product.find({ name: { $in: [name] } });
 
     const orderId = uuid.v4();
 
@@ -56,14 +56,11 @@ class ProductController {
     });
 
     this.ordersMap.set(orderId, {
-      products,
-      username: req.user?.username || "guest",
       orderId,
-      status: "PENDING",
-      toTalPrice: products.reduce((sum, p) => sum + p.price, 0)
+      products
     });
 
-    // ✅ Phản hồi ngay cho client (không chờ Order service phản hồi)
+    // Phản hồi ngay cho client (không chờ Order service phản hồi)
     return res.status(200).json({
       message: "Order request sent to queue",
       orderId,
@@ -71,7 +68,7 @@ class ProductController {
     });
 
   } catch (error) {
-    console.error("❌ Error creating order:", error);
+    console.error("Error creating order:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

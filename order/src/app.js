@@ -18,7 +18,7 @@ class App {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       });
-      console.log("✅ MongoDB connected");
+      console.log("MongoDB connected");
     } catch (err) {
       console.error("❌ MongoDB connection failed:", err.message);
       setTimeout(() => this.connectDB(), 5000);
@@ -29,14 +29,14 @@ class App {
     const connection = await amqp.connect(config.rabbitMQURI);
     const channel = await connection.createChannel();
     await channel.assertQueue("orders");
-    console.log("✅ RabbitMQ connected");
+    console.log("RabbitMQ connected");
     return channel;
   }
 
   async setupOrderConsumer() {
     const channel = await this.connectRabbitMQ();
     channel.consume("orders", async (data) => {
-      console.log("📦 Consuming ORDER service");
+      console.log("Consuming ORDER service");
       const { products, username } = JSON.parse(data.content);
 
       const Order = require("./models/order");
@@ -48,7 +48,7 @@ class App {
       await newOrder.save();
 
       channel.ack(data);
-      console.log("✅ Order saved");
+      console.log("Order saved");
     });
   }
 

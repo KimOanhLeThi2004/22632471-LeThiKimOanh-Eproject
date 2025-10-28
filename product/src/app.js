@@ -28,9 +28,9 @@ class App {
     // Kết nối MongoDB
     try {
       await mongoose.connect(process.env.MONGODB_PRODUCT_URI || "mongodb://mongo:27017/productdb");
-      console.log("✅ MongoDB connected");
+      console.log("MongoDB connected");
     } catch (err) {
-      console.error("❌ MongoDB connection error:", err);
+      console.error("MongoDB connection error:", err);
       // Bạn có thể thêm logic retry hoặc thoát ở đây nếu muốn
     }
 
@@ -41,7 +41,7 @@ class App {
 
   start() {
     const PORT = process.env.PORT || 3001;
-    this.app.listen(PORT, () => console.log(`🚀 Product service running on port ${PORT}`));
+    this.app.listen(PORT, () => console.log(`Product service running on port ${PORT}`));
   }
 }
 
