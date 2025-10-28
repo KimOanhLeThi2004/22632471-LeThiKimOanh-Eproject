@@ -55,6 +55,14 @@ class ProductController {
       orderId,
     });
 
+    this.ordersMap.set(orderId, {
+      products,
+      username: req.user?.username || "guest",
+      orderId,
+      status: "PENDING",
+      toTalPrice: products.reduce((sum, p) => sum + p.price, 0)
+    });
+
     // ✅ Phản hồi ngay cho client (không chờ Order service phản hồi)
     return res.status(200).json({
       message: "Order request sent to queue",
