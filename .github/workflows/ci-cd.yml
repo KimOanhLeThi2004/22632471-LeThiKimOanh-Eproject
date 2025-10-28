@@ -11,8 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🧹 Làm sạch toàn bộ container, network, volume cũ
-      - name: 🧹 Clean old Docker environment
+      # Làm sạch toàn bộ container, network, volume cũ
+      - name: Clean old Docker environment
         shell: powershell
         run: |
           Write-Host "Stopping all containers..."
@@ -20,17 +20,17 @@ jobs:
           docker network prune -f
           docker volume prune -f
           docker system prune -af
-          Write-Host "✅ Docker environment cleaned."
+          Write-Host "Docker environment cleaned."
 
-      # 🔐 Đăng nhập DockerHub
-      - name: 🔐 Login to DockerHub
+      # Đăng nhập DockerHub
+      - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 🧩 Tạo file .env để Docker Compose đọc được
-      - name: 🧩 Generate .env file for Docker Compose
+      # Tạo file .env để Docker Compose đọc được
+      - name: Generate .env file for Docker Compose
         shell: powershell
         run: |
           if (Test-Path .\.env) { Remove-Item .\.env }
@@ -48,33 +48,33 @@ jobs:
           API_GATEWAY_PORT=${{ secrets.API_GATEWAY_PORT }}
           "@
           $envLines | Out-File -Encoding ascii -FilePath .env
-          Write-Host "✅ .env file generated."
+          Write-Host ".env file generated."
 
-      # 🏗️ Build và khởi chạy service (dùng project name cố định để down/up trùng)
-      - name: 🏗️ Build and run services
+      # Build và khởi chạy service (dùng project name cố định để down/up trùng)
+      - name: Build and run services
         shell: powershell
         run: |
-          Write-Host "🚀 Starting Docker Compose..."
+          Write-Host "Starting Docker Compose..."
           docker compose -p eproject down -v --remove-orphans
           docker compose -p eproject up -d --build
-          Write-Host "✅ All services started."
+          Write-Host "All services started."
 
-      # ⏳ Chờ cho MongoDB & RabbitMQ sẵn sàng
-      - name: ⏳ Wait for core services
+      # Chờ cho MongoDB & RabbitMQ sẵn sàng
+      - name: Wait for core services
         shell: powershell
         run: |
           Write-Host "Waiting for MongoDB & RabbitMQ to be ready..."
           Start-Sleep -Seconds 15
           docker ps
 
-      # 💚 Kiểm tra API Gateway health
-      - name: 🔍 Check API Gateway health
+      # Kiểm tra API Gateway health
+      - name: Check API Gateway health
         shell: powershell
         run: |
           for ($i = 0; $i -lt 10; $i++) {
             try {
               Invoke-WebRequest -Uri "http://localhost:${{ secrets.API_GATEWAY_PORT }}/api/health" -UseBasicParsing
-              Write-Host "✅ API Gateway is up and healthy!"
+              Write-Host "API Gateway is up and healthy!"
               break
             } catch {
               Write-Host "Waiting for API Gateway..."
@@ -82,7 +82,7 @@ jobs:
             }
           }
 
-      # 📤 Push image lên DockerHub
-      - name: 📤 Push images to DockerHub
+      # Push image lên DockerHub
+      - name: Push images to DockerHub
         shell: powershell
         run: docker compose -p eproject push
