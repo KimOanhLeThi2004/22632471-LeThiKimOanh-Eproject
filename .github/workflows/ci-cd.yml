@@ -58,7 +58,7 @@ jobs:
           docker compose -p eproject up -d --build
           Write-Host "All services started."
 
-      # Chờ cho MongoDB & RabbitMQ sẵn sàng
+      # Chờ cho MongoDB & RabbitMQ sẵn sàng 
       - name: Wait for core services
         shell: powershell
         run: |
