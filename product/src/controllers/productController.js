@@ -43,8 +43,8 @@ class ProductController {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { name } = req.body;
-    const products = await Product.find({ name: { $in: [name] } });
+    const { _id } = req.body;_d
+    const products = await Product.find({ _id: { $in: [_id] } });
 
     const orderId = uuid.v4();
 
