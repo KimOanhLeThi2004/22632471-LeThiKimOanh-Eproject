@@ -55,14 +55,6 @@ jobs:
           docker compose -p eproject up -d --build
           Write-Host "All services (re)started."
 
-      # Chờ cho MongoDB & RabbitMQ sẵn sàng 
-      - name: Wait for core services
-        shell: powershell
-        run: |
-          Write-Host "Waiting for MongoDB & RabbitMQ to be ready..."
-          Start-Sleep -Seconds 15
-          docker ps
-
       # Kiểm tra API Gateway health
       - name: Check API Gateway health
         shell: powershell
