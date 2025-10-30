@@ -15,10 +15,8 @@ jobs:
       - name: Clean old Docker environment
         shell: powershell
         run: |
-          Write-Host "Stopping all containers..."
-          docker ps -aq | ForEach-Object { docker stop $_; docker rm -f $_ }
-          docker network prune -f
-          docker system prune -af
+          Write-Host "Stopping services from previous run..."
+          docker compose -p eproject down --remove-orphans
           Write-Host "Docker environment cleaned."
 
       # Đăng nhập DockerHub
@@ -54,9 +52,8 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Starting Docker Compose..."
-          docker compose -p eproject down --remove-orphans
           docker compose -p eproject up -d --build
-          Write-Host "All services started."
+          Write-Host "All services (re)started."
 
       # Chờ cho MongoDB & RabbitMQ sẵn sàng 
       - name: Wait for core services
