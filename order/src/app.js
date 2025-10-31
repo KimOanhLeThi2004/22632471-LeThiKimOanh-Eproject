@@ -35,23 +35,18 @@ class App {
 
 async setupOrderConsumer() {
     const channel = await this.connectRabbitMQ();
-
     // <-- THÊM DÒNG NÀY (Để tránh crash nếu RabbitMQ chưa kết nối được)
     if (!channel) {
       console.warn("Cannot setup consumer, channel is not available. Will retry...");
       // Hàm connectRabbitMQ của bạn (phiên bản đã sửa) sẽ tự động thử kết nối lại
-      return; 
+      return;
     }
-
     channel.consume("orders", async (data) => {
-      
-      try { 
+      try {
         console.log("Consuming ORDER service");
         const { products, username, orderId } = JSON.parse(data.content); // <-- SỬA DÒNG NÀY (Nhận thêm orderId)
-
         const productIDs = products.map(p => p._id); // Trích xuất mảng ID
         const calculatedTotalPrice = products.reduce((acc, p) => acc + p.price, 0);
-
         const Order = require("./models/order");
         const newOrder = new Order({
           products: productIDs, // <-- SỬA DÒNG NÀY (Dùng mảng ID)
@@ -61,7 +56,7 @@ async setupOrderConsumer() {
        await newOrder.save();
 
        channel.ack(data);
-       console.log(`Order ${orderId} saved to MongoDB`); 
+       console.log(`Order ${orderId} saved to MongoDB`);
 
       } catch (err) {
         console.error("Error saving order to MongoDB:", err.message);
@@ -94,5 +89,7 @@ async setupOrderConsumer() {
     );
   }
 }
+
+
 
 module.exports = App;
