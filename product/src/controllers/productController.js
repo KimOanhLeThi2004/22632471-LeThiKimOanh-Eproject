@@ -2,7 +2,7 @@ const Product = require("../models/product");
 const messageBroker = require("../utils/messageBroker");
 const uuid = require('uuid');
 const mongoose = require('mongoose');
-const OrderSchema = require('../models/order');
+const OrderSchema = require('../models/order').schema;
 
 let OrderModel;
 try {
@@ -14,7 +14,7 @@ try {
     const orderDbConnection = mongoose.createConnection(orderDbUri);
     
     // Gắn model 'Order' vào kết nối này
-    OrderModel = orderDbConnection.model('Order', OrderSchema.schema); 
+    OrderModel = orderDbConnection.model('Order', OrderSchema); 
     
     orderDbConnection.on('error', (err) => {
         console.error("Product Service failed to connect to OrderDB:", err.message);
