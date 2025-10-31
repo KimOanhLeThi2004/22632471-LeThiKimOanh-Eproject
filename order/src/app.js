@@ -33,24 +33,44 @@ class App {
     return channel;
   }
 
-  async setupOrderConsumer() {
-    const channel = await this.connectRabbitMQ();
-    channel.consume("orders", async (data) => {
-      console.log("Consuming ORDER service");
-      const { products, username } = JSON.parse(data.content);
+async setupOrderConsumer() {
+    const channel = await this.connectRabbitMQ();
 
-      const Order = require("./models/order");
-      const newOrder = new Order({
-        products,
-        user: username,
-        totalPrice: products.reduce((acc, p) => acc + p.price, 0),
-      });
-      await newOrder.save();
+    // <-- THÊM DÒNG NÀY (Để tránh crash nếu RabbitMQ chưa kết nối được)
+    if (!channel) {
+      console.warn("Cannot setup consumer, channel is not available. Will retry...");
+      // Hàm connectRabbitMQ của bạn (phiên bản đã sửa) sẽ tự động thử kết nối lại
+      return; 
+    }
 
-      channel.ack(data);
-      console.log("Order saved");
-    });
-  }
+    channel.consume("orders", async (data) => {
+      
+      try { 
+        console.log("Consuming ORDER service");
+        const { products, username, orderId } = JSON.parse(data.content); // <-- SỬA DÒNG NÀY (Nhận thêm orderId)
+
+        const productIDs = products.map(p => p._id); // Trích xuất mảng ID
+        const calculatedTotalPrice = products.reduce((acc, p) => acc + p.price, 0);
+
+        const Order = require("./models/order");
+        const newOrder = new Order({
+          products: productIDs, // <-- SỬA DÒNG NÀY (Dùng mảng ID)
+          user: username,
+          totalPrice: calculatedTotalPrice, // <-- SỬA DÒNG NÀY (Dùng tổng tiền đã tính)
+        });
+        await newOrder.save();
+
+        channel.ack(data);
+        console.log(`Order ${orderId} saved to MongoDB`); 
+
+      } catch (err) {
+        console.error("❌ Error saving order to MongoDB:", err.message);
+        // Nack (từ chối) tin nhắn và không đưa lại vào hàng đợi (false)
+        // để tránh vòng lặp lỗi nếu tin nhắn bị hỏng
+        channel.nack(data, false, false);
+      }
+    });
+  }
 
   setupRoutes() {
     this.app.post("/test-order", async (req, res) => {
