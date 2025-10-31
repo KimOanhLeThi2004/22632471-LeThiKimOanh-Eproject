@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+  orderId: {
+    type: String,
+    required: true,
+    index: true,     // Đánh index để tìm kiếm nhanh hơn
+    unique: true     // Đảm bảo mỗi orderId là duy nhất
+  },
   products: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'products',

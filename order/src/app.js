@@ -54,6 +54,7 @@ async setupOrderConsumer() {
 
         const Order = require("./models/order");
         const newOrder = new Order({
+          orderId: orderId,
           products: productIDs, // <-- SỬA DÒNG NÀY (Dùng mảng ID)
           user: username,
           totalPrice: calculatedTotalPrice, // <-- SỬA DÒNG NÀY (Dùng tổng tiền đã tính)
