@@ -41,7 +41,7 @@ class ProductController {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const { ids } = req.body;
-    const products = await Product.find({ _id: { $in: [ids] } }).lean();
+    const products = await Product.find({ _id: { $in: [ids] } });
     const orderId = uuid.v4();
     // Gửi message sang hàng đợi "orders"
     await messageBroker.publishMessage("orders", {
