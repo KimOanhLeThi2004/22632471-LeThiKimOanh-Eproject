@@ -1,35 +1,16 @@
 const Product = require("../models/product");
 const messageBroker = require("../utils/messageBroker");
 const uuid = require('uuid');
-const mongoose = require('mongoose'); 
-const OrderSchema = require('../models/order'); 
 
-let OrderModel;
-try {
-  const orderDbUri = process.env.MONGODB_ORDER_URI;
-  if (!orderDbUri) {
-    console.error("MONGODB_ORDER_URI is not set in product service env!");
-  } else {
-    const orderDbConnection = mongoose.createConnection(orderDbUri);
-    OrderModel = orderDbConnection.model('Order', OrderSchema.schema); // Gắn Model vào kết nối
 
-    orderDbConnection.on('error', (err) => {
-        console.error("Product Service failed to connect to OrderDB:", err.message);
-    });
-    orderDbConnection.once('open', () => {
-        console.log("Product Service connected to OrderDB for reading status.");
-    });
-  }
-} catch(e) {
-  console.error("Error creating OrderDB connection in Product service", e);
-}
-
+/**
+ * Class to hold the API implementation for the product services
+ */
 class ProductController {
 
   constructor() {
     this.createOrder = this.createOrder.bind(this);
     this.getOrderStatus = this.getOrderStatus.bind(this);
-    this.getProducts = this.getProducts.bind(this);
     this.ordersMap = new Map();
 
   }
@@ -96,26 +77,11 @@ class ProductController {
 
   async getOrderStatus(req, res, next) {
     const { orderId } = req.params;
-
-    try {
-      if (!OrderModel) { // Kiểm tra xem kết nối DB phụ có thành công không
-         return res.status(503).json({ message: "Order status check service not ready." });
-      }
-
-      const order = await OrderModel.findOne({ orderId: orderId }); 
-
-      if (!order) {
-        const cachedOrder = this.ordersMap.get(orderId);
-        if (cachedOrder) return res.status(200).json(cachedOrder);
-
-        return res.status(404).json({ message: "Order not found in database or cache" });
-      }
-      return res.status(200).json(order); 
-
-    } catch (dbError) {
-      console.error("Error querying order database:", dbError);
-      return res.status(500).json({ message: "Database query error" });
+    const order = this.ordersMap.get(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
     }
+    return res.status(200).json(order);
   }
 
   async getProducts(req, res, next) {

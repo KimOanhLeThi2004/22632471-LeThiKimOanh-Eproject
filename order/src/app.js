@@ -34,36 +34,43 @@ class App {
   }
 
 async setupOrderConsumer() {
-   const channel = await this.connectRabbitMQ();
-    if (!channel) return; // Thêm kiểm tra
+    const channel = await this.connectRabbitMQ();
 
-   channel.consume("orders", async (data) => {
-      try { // Thêm try...catch
+    // <-- THÊM DÒNG NÀY (Để tránh crash nếu RabbitMQ chưa kết nối được)
+    if (!channel) {
+      console.warn("Cannot setup consumer, channel is not available. Will retry...");
+      // Hàm connectRabbitMQ của bạn (phiên bản đã sửa) sẽ tự động thử kết nối lại
+      return; 
+    }
+
+    channel.consume("orders", async (data) => {
+      
+      try { 
         console.log("Consuming ORDER service");
+        const { products, username, orderId } = JSON.parse(data.content); // <-- SỬA DÒNG NÀY (Nhận thêm orderId)
 
-        // 1. Nhận đầy đủ dữ liệu (gốc) và tính toán
-        const { products: fullProducts, username, orderId } = JSON.parse(data.content); // Lấy orderId
-        const productIDs = fullProducts.map(p => p._id);
-        const calculatedTotalPrice = fullProducts.reduce((acc, p) => acc + p.price, 0);
+        const productIDs = products.map(p => p._id); // Trích xuất mảng ID
+        const calculatedTotalPrice = products.reduce((acc, p) => acc + p.price, 0);
 
         const Order = require("./models/order");
         const newOrder = new Order({
-          orderId: orderId, // <-- 2. THÊM DÒNG NÀY
-          products: productIDs, // Dùng ID
+          products: productIDs, // <-- SỬA DÒNG NÀY (Dùng mảng ID)
           user: username,
-          totalPrice: calculatedTotalPrice, // Dùng tổng tiền
-        });
-        await newOrder.save();
+          totalPrice: calculatedTotalPrice, // <-- SỬA DÒNG NÀY (Dùng tổng tiền đã tính)
+       });
+       await newOrder.save();
 
-        channel.ack(data);
-        console.log(`Order ${orderId} saved to MongoDB`); // Sửa log
+       channel.ack(data);
+       console.log(`Order ${orderId} saved to MongoDB`); 
 
-      } catch (err) { // Thêm catch
-        console.error("Error saving order:", err.message);
+      } catch (err) {
+        console.error("Error saving order to MongoDB:", err.message);
+        // Nack (từ chối) tin nhắn và không đưa lại vào hàng đợi (false)
+        // để tránh vòng lặp lỗi nếu tin nhắn bị hỏng
         channel.nack(data, false, false);
       }
-    });
-  }
+   });
+ }
 
   setupRoutes() {
     this.app.post("/test-order", async (req, res) => {
